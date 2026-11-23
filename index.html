@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Baga Sands Resort — Guest Feedback Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">BS</div>
+      <div>
+        <h1>Baga Sands Resort &amp; Spa — Goa</h1>
+        <p class="subtitle">Guest Experience &amp; Reputation Intelligence</p>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <button id="btnOpenModal" class="btn btn-primary">+ Log Guest Feedback</button>
+      <button id="btnExportCsv" class="btn btn-secondary">Export Filtered CSV</button>
+      <button id="btnResetData" class="btn btn-ghost" title="Restore original 64 seeded records">Reset Seed Data</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Filter Bar -->
+    <section class="card filter-bar" aria-label="Feedback Filters">
+      <div class="filter-group">
+        <label for="filterDateFrom">From Date</label>
+        <input type="date" id="filterDateFrom" />
+      </div>
+      <div class="filter-group">
+        <label for="filterDateTo">To Date</label>
+        <input type="date" id="filterDateTo" />
+      </div>
+      <div class="filter-group">
+        <label for="filterRoom">Room Type</label>
+        <select id="filterRoom">
+          <option value="ALL">All Room Types</option>
+          <option value="Sea View Suite">Sea View Suite</option>
+          <option value="Garden Villa">Garden Villa</option>
+          <option value="Poolside Cabana">Poolside Cabana</option>
+          <option value="Deluxe Room">Deluxe Room</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label for="filterSource">Source</label>
+        <select id="filterSource">
+          <option value="ALL">All Sources</option>
+          <option value="Google">Google</option>
+          <option value="Email">Email</option>
+          <option value="Comment card">Comment card</option>
+          <option value="Phone">Phone</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label for="filterMinRating">Minimum Rating</label>
+        <select id="filterMinRating">
+          <option value="0">Any Rating (1–5 ★)</option>
+          <option value="4.5">4.5 ★ &amp; above</option>
+          <option value="4">4.0 ★ &amp; above</option>
+          <option value="3">3.0 ★ &amp; above</option>
+          <option value="2">2.0 ★ &amp; above</option>
+        </select>
+      </div>
+      <div class="filter-actions">
+        <button id="btnClearFilters" class="btn btn-secondary">Clear Filters</button>
+      </div>
+    </section>
+
+    <!-- KPI Row -->
+    <section class="kpi-grid">
+      <article class="card kpi-card">
+        <span class="kpi-label">Overall Average</span>
+        <div class="kpi-value-row">
+          <span id="kpiOverallAvg" class="kpi-value">0.00</span>
+          <span class="kpi-unit">/ 5.0</span>
+        </div>
+        <span id="kpiReviewCount" class="kpi-sub">Based on 0 reviews</span>
+      </article>
+
+      <article class="card kpi-card kpi-urgent">
+        <span class="kpi-label">Open Urgent Items</span>
+        <div class="kpi-value-row">
+          <span id="kpiUrgentCount" class="kpi-value">0</span>
+          <span class="badge badge-urgent">Needs Action</span>
+        </div>
+        <span class="kpi-sub">Any category rated 1 or 2 ★</span>
+      </article>
+
+      <article class="card kpi-card kpi-followup">
+        <span class="kpi-label">Open Follow-ups</span>
+        <div class="kpi-value-row">
+          <span id="kpiFollowupCount" class="kpi-value">0</span>
+          <span class="badge badge-followup">Keyword Alert</span>
+        </div>
+        <span class="kpi-sub">Mentions dirty, rude, refund, etc.</span>
+      </article>
+
+      <article class="card kpi-card kpi-praise">
+        <span class="kpi-label">5-Star Praise</span>
+        <div class="kpi-value-row">
+          <span id="kpiPraiseCount" class="kpi-value">0</span>
+          <span class="badge badge-praise">Top Rated</span>
+        </div>
+        <span class="kpi-sub">Overall 5.0 ★ guest experiences</span>
+      </article>
+    </section>
+
+    <!-- Weekly Executive Summary -->
+    <section class="card summary-card">
+      <div class="section-header">
+        <div>
+          <h2>Weekly Executive Summary</h2>
+          <p class="section-hint">Auto-generated brief based on currently filtered stay records</p>
+        </div>
+        <button id="btnCopySummary" class="btn btn-secondary">Copy Summary</button>
+      </div>
+      <p id="weeklySummaryText" class="summary-text"></p>
+    </section>
+
+    <!-- Charts Grid (HTML5 Canvas) -->
+    <section class="charts-grid">
+      <article class="card chart-card">
+        <div class="chart-header">
+          <h3>Rating Distribution</h3>
+          <span class="chart-meta">Count by rounded overall stars</span>
+        </div>
+        <div class="canvas-wrap">
+          <canvas id="chartDistribution"></canvas>
+        </div>
+      </article>
+
+      <article class="card chart-card">
+        <div class="chart-header">
+          <h3>Category Averages</h3>
+          <span class="chart-meta">Mean score out of 5.0</span>
+        </div>
+        <div class="canvas-wrap">
+          <canvas id="chartCategories"></canvas>
+        </div>
+      </article>
+
+      <article class="card chart-card chart-wide">
+        <div class="chart-header">
+          <h3>12-Week Rating Trend</h3>
+          <span class="chart-meta">Weekly average overall score across trailing 12 weeks</span>
+        </div>
+        <div class="canvas-wrap canvas-wrap-wide">
+          <canvas id="chartTrend"></canvas>
+        </div>
+      </article>
+    </section>
+
+    <!-- Open Urgent & Follow-Up Queue -->
+    <section class="card urgent-section">
+      <div class="section-header">
+        <div>
+          <h2>Open Urgent &amp; Escalation Queue (<span id="queueCount">0</span>)</h2>
+          <p class="section-hint">Unresolved Urgent (1–2 ★ category) and Follow-up flagged stays requiring duty manager sign-off</p>
+        </div>
+      </div>
+      <div id="urgentQueueList" class="queue-grid"></div>
+    </section>
+
+    <!-- Full Filtered Reviews Table / Feed -->
+    <section class="card feed-section">
+      <div class="section-header">
+        <div>
+          <h2>Guest Feedback Log (<span id="feedCount">0</span>)</h2>
+          <p class="section-hint">Sorted newest stay first · Reflects all active filters</p>
+        </div>
+        <div class="flag-filter-pills">
+          <button class="pill active" data-flag="ALL">All</button>
+          <button class="pill" data-flag="Urgent">Urgent</button>
+          <button class="pill" data-flag="Follow-up">Follow-up</button>
+          <button class="pill" data-flag="Praise">Praise</button>
+        </div>
+      </div>
+      <div id="feedbackList" class="feedback-list"></div>
+    </section>
+  </main>
+
+  <!-- New Feedback Entry Modal -->
+  <div id="feedbackModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="modalTitle">Log New Guest Feedback</h2>
+        <button id="btnCloseModal" class="icon-btn" aria-label="Close modal">&times;</button>
+      </div>
+      <form id="feedbackForm">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="guestName">Guest Name *</label>
+            <input type="text" id="guestName" required placeholder="e.g., Ananya Deshmukh" />
+          </div>
+          <div class="form-group">
+            <label for="stayDate">Stay Date *</label>
+            <input type="date" id="stayDate" required />
+          </div>
+          <div class="form-group">
+            <label for="roomType">Room Type *</label>
+            <select id="roomType" required>
+              <option value="Sea View Suite">Sea View Suite</option>
+              <option value="Garden Villa">Garden Villa</option>
+              <option value="Poolside Cabana">Poolside Cabana</option>
+              <option value="Deluxe Room">Deluxe Room</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="source">Feedback Source *</label>
+            <select id="source" required>
+              <option value="Google">Google</option>
+              <option value="Email">Email</option>
+              <option value="Comment card">Comment card</option>
+              <option value="Phone">Phone</option>
+            </select>
+          </div>
+        </div>
+
+        <fieldset class="ratings-fieldset">
+          <legend>Category Ratings (1 = Poor, 5 = Exceptional)</legend>
+          <div class="rating-inputs">
+            <label>
+              Cleanliness
+              <select id="rateCleanliness">
+                <option value="5">5 ★</option>
+                <option value="4" selected>4 ★</option>
+                <option value="3">3 ★</option>
+                <option value="2">2 ★</option>
+                <option value="1">1 ★</option>
+              </select>
+            </label>
+            <label>
+              Food
+              <select id="rateFood">
+                <option value="5">5 ★</option>
+                <option value="4" selected>4 ★</option>
+                <option value="3">3 ★</option>
+                <option value="2">2 ★</option>
+                <option value="1">1 ★</option>
+              </select>
+            </label>
+            <label>
+              Service
+              <select id="rateService">
+                <option value="5">5 ★</option>
+                <option value="4" selected>4 ★</option>
+                <option value="3">3 ★</option>
+                <option value="2">2 ★</option>
+                <option value="1">1 ★</option>
+              </select>
+            </label>
+            <label>
+              Location
+              <select id="rateLocation">
+                <option value="5" selected>5 ★</option>
+                <option value="4">4 ★</option>
+                <option value="3">3 ★</option>
+                <option value="2">2 ★</option>
+                <option value="1">1 ★</option>
+              </select>
+            </label>
+            <label>
+              Value
+              <select id="rateValue">
+                <option value="5">5 ★</option>
+                <option value="4" selected>4 ★</option>
+                <option value="3">3 ★</option>
+                <option value="2">2 ★</option>
+                <option value="1">1 ★</option>
+              </select>
+            </label>
+          </div>
+        </fieldset>
+
+        <div class="form-group">
+          <label for="comment">Guest Comment *</label>
+          <textarea id="comment" rows="3" required placeholder="Share guest remarks on housekeeping, dining, beach access, or staff..."></textarea>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" id="btnCancelModal" class="btn btn-secondary">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Feedback</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Action / Follow-Up Resolution Modal -->
+  <div id="actionModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="actionModalTitle">
+    <div class="modal-card modal-sm">
+      <div class="modal-header">
+        <h2 id="actionModalTitle">Mark Feedback as Actioned</h2>
+        <button id="btnCloseActionModal" class="icon-btn" aria-label="Close modal">&times;</button>
+      </div>
+      <form id="actionForm">
+        <input type="hidden" id="actionEntryId" />
+        <p id="actionEntrySummary" class="modal-context"></p>
+        <div class="form-group">
+          <label for="staffNote">Staff Resolution Note *</label>
+          <textarea id="staffNote" rows="3" required placeholder="e.g., Duty Manager called guest, issued 20% spa voucher and inspected room AC..."></textarea>
+        </div>
+        <div class="form-group">
+          <label for="actionDate">Action Date *</label>
+          <input type="date" id="actionDate" required />
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="btnCancelActionModal" class="btn btn-secondary">Cancel</button>
+          <button type="submit" class="btn btn-primary">Confirm Actioned</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
